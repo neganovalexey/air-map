@@ -2,8 +2,11 @@ from flask import Flask, render_template, request, jsonify
 
 import json
 
+from emissions import Emissions
+
 
 app = Flask(__name__, static_folder='static')
+emissions = Emissions()
 
 
 @app.route('/', methods=['GET'])
@@ -18,7 +21,7 @@ def make_info():
     print(data)
     #TODO: return data depending on filter categories
 
-    response = {'points': []}
+    response = emissions.get_emissions(data['min_lat'], data['min_lon'], data['max_lat'], data['max_lon'])
     return jsonify(response)
 
 
