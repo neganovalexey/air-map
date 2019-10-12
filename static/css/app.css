@@ -1,0 +1,16 @@
+.map {
+  width: 90%;
+  height: 70vh;
+  position: relative;
+}
+
+@media (max-width: 992px) {
+  .checkboxes {
+  	margin-left: 5vw;
+  }
+}
+@media (min-width: 992px) {
+  .checkboxes {
+  	margin-left: 0vw;
+  }
+}
