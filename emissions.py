@@ -8,7 +8,7 @@ from utils import download_csv_dataset, get_neighborhoods
 class Emissions:
 
     def __init__(self):
-        self._bins = 5
+        self._bins = 100
         self._layers_emis = {'trees': TreesEmissions(), 'vehicles': VehiclesEmissions()}
     
     def get_emissions(self, min_lat, min_lon, max_lat, max_lon):
@@ -99,9 +99,13 @@ class VehiclesEmissions(EmissionsBase):
 
 if __name__ == '__main__':
     emi = Emissions()
-    #print(emi.get_emissions(41.353755, 2.111845, 41.388346, 2.168766))
+    # print(emi.get_emissions(41.353755, 2.111845, 41.388346, 2.168766))
     layers = emi.get_emissions(float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]))
-    os.mkdir('static/csvs/')
+    try:
+    	os.mkdir('static/csv/')
+    except Exception as e:
+        print(e)
     for layer, data in layers.items():
         df = pd.DataFrame(data)
-        df.to_csv('static/csvs/' + layer + '.csv')
+       	df.to_csv('static/csv/' + layer + '.csv')
+

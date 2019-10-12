@@ -19,10 +19,8 @@ def draw_map():
 def make_info():
     data = request.form
     print(data)
-    #TODO: return data depending on filter categories
-
-    response = emissions.get_emissions(data['min_lat'], data['min_lon'], data['max_lat'], data['max_lon'])
-    return jsonify(response)
+    #TODO: return filename depending on filter categories
+    return jsonify({'filename': 'trees.csv'})
 
 
 try:
