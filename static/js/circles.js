@@ -30,7 +30,7 @@ map.setBaseLayer(mapLayer);
 var behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
 var ui = H.ui.UI.createDefault(map, defaultLayers, 'en-US');
 
-let nonLinearity = 1;
+let nonLinearity = 0.5;
 
 var heatmap = null;
 
@@ -50,7 +50,7 @@ $('#submitform').submit(function(e){
       const colorScale = d3.scaleLinear().range(data.colorscale.range).domain(data.colorscale.domain);
 
       let provider = new H.datalens.RawDataProvider({
-          dataUrl: csvBase + csvFile,
+          dataUrl: csvBase + 'n_' + csvFile,
           dataToFeatures: (data, helpers) => {
               let parsed = helpers.parseCSV(data);
               let features = [];
@@ -125,9 +125,9 @@ $('#submitform').submit(function(e){
               value: 12,
               zoom: 16
           }],
-          valueRange: z => [0, baseCount / Math.pow(z, 2 * nonLinearity)],
+          valueRange: z => [0, baseCount / z],
           countRange: [0, 0],
-          opacity: 1,
+          opacity: 0.5,
           colorScale: colorScale,
           aggregation: H.datalens.HeatmapLayer.Aggregation.AVERAGE,
           inputScale: H.datalens.HeatmapLayer.InputScale.LINEAR

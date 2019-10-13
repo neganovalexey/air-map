@@ -6,19 +6,19 @@ import json
 app = Flask(__name__, static_folder='static')
 
 
-GREEN = ['rgba(255, 255, 255, 0)', 'yellow', 'rgba(34, 139, 34, 0.9)']
-RED = ['rgba(255, 255, 255, 0)', 'yellow', 'rgba(139, 34, 34, 0.9)']
-RED_YELLOW_GREEN = ['red', 'yellow', 'green']
+GREEN = { 'range': ['rgba(255, 255, 255, 0.1)', 'rgba(34, 139, 34, 0.9)', 'yellow'], 'domain': [0, 0.3, 1] }
+RED = { 'range': ['rgba(0, 0, 0, 0.1)', 'yellow', 'rgba(139, 34, 34, 0.9)'], 'domain': [0, 0.2, 1] }
+RED_YELLOW_GREEN = { 'range': ['green', 'yellow', 'red'], 'domain': [0, 0.5, 1] }
 
 COLOR_SCHEMES = {
     'empty.csv': (GREEN, 0),
-    'trees.csv': (GREEN, 100000),
-    'veg.csv': (GREEN, 100000000),
-    'vehicles.csv': (RED, 2000000000),
-    'trees_veg.csv': (GREEN, 100000000),
-    'trees_vehicles.csv': (RED_YELLOW_GREEN, 2000000000),
-    'veg_vehicles.csv': (RED_YELLOW_GREEN, 2000000000),
-    'trees_veg_vehicles.csv': (RED_YELLOW_GREEN, 2000000000)
+    'trees.csv': (GREEN, 1000),
+    'veg.csv': (GREEN, 1000),
+    'vehicles.csv': (RED, 1000),
+    'trees_veg.csv': (GREEN, 1000),
+    'trees_vehicles.csv': (RED_YELLOW_GREEN, 1000),
+    'veg_vehicles.csv': (RED_YELLOW_GREEN, 1000),
+    'trees_veg_vehicles.csv': (RED_YELLOW_GREEN, 1000)
 }
 
 
@@ -41,10 +41,7 @@ def make_info():
     color_range, base_count = COLOR_SCHEMES[filename]
     return jsonify({
         'filename': filename,
-        'colorscale': {
-            'range': color_range,
-            'domain': [0, 0.5, 1],
-        },
+        'colorscale': color_range,
         'base_count': base_count,
     })
 
