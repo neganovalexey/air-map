@@ -20,3 +20,6 @@ def download_csv_dataset(dataset_id, force_reload=False):
         with open('data/' + dataset_id + '.csv', 'wb') as f:
             f.write(ds.content)
     return pd.read_csv('data/' + dataset_id + '.csv')
+
+def get_neighborhoods():
+    return pd.read_csv('data/neightborhoods.csv', index_col=0, header=None, names=['id', 'name', 'lat', 'lon'])

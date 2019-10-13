@@ -1,6 +1,9 @@
+import sys
+import os
 import numpy as np
 import pandas as pd
-from utils import download_csv_dataset
+import geopy.distance
+from utils import download_csv_dataset, get_neighborhoods
 
 class Emissions:
 
@@ -21,8 +24,9 @@ class Emissions:
         for i in range(lat_bins):
             for j in range(lon_bins):
                 for layer, emis in self._layers_emis.items():
-                    layers[layer].append({ 'lat': min_lat + bin_size * (i + 0.5), 'lon': min_lon + bin_size * (j + 0.5),
-                                           'emi': emis.get_emission(i, j)})
+                    lat = min_lat + bin_size * (i + 0.5)
+                    lon = min_lon + bin_size * (j + 0.5)
+                    layers[layer].append({ 'lat': lat, 'lon': lon, 'emi': emis.get_emission(i, j, lat, lon)})
         return layers
 
 
@@ -31,7 +35,7 @@ class EmissionsBase:
     def prepare_grid(self, min_lat, min_lon, lat_bins, lon_bins, bin_size):
         pass
     
-    def get_emission(self, i, j):
+    def get_emission(self, i, j, lat, lon):
         pass
 
 
@@ -55,14 +59,49 @@ class TreesEmissions(EmissionsBase):
             if i >= 0 and i < lat_bins and j >= 0 and j < lon_bins:
                 self.trees_grid[i][j] -= em
     
-    def get_emission(self, i, j):
+    def get_emission(self, i, j, lat, lon):
         return self.trees_grid[i][j]
 
 class VehiclesEmissions(EmissionsBase):
 
+    hp2num = {
+       'Menys 8 cf': 3, '8 a 8,9': 8.5, '9 a 9,9': 9.5, '10 a 10,9': 10.5, '11 a 11,9': 11.5,
+       '12 a 12,9': 12.5, '13 a 13,9': 13.5, '14 a 14,9': 14.5, '15 a 15,9': 15.5, '16 a 19,9': 18,
+       '20 i més cf': 25, 'No consta': 5
+    }
+    
+    total_emissions = 4930000000.0
+
     def __init__(self):
         self.cars = download_csv_dataset('est-vehicles-potencia-fiscal-turismes')
+        self.neighborhoods = get_neighborhoods()
+        self.nbr2emi = {}
+        for index, car in self.cars.iterrows():
+            nbr_id = car['Codi_Barri']
+            if not nbr_id in self.nbr2emi:
+                self.nbr2emi[nbr_id] = 0
+            self.nbr2emi[nbr_id] += self.hp2num[car['Potencia_fiscal']] * car['Nombre_turismes']
+            
+        s = sum(self.nbr2emi.values())
+        for nbr_id in self.nbr2emi.keys():
+            self.nbr2emi[nbr_id] = self.total_emissions * (self.nbr2emi[nbr_id] / s)
     
-    def get_emission(self, i, j):
-        return 2
+    def get_emission(self, i, j, lat, lon):
+        nbrs = []
+        for index, nbr in self.neighborhoods.iterrows():
+            dist = geopy.distance.vincenty((lat, lon), (nbr['lat'], nbr['lon'])).km
+            nbrs.append((index, 1.0 / dist))
+        nbrs.sort(key=lambda n: n[1], reverse=True)
+        nbrs = nbrs[:5]
+        s = sum([n[1] for n in nbrs])
+        return sum([0.2 * self.nbr2emi[n[0]] * (n[1] / s) for n in nbrs])
 
+
+if __name__ == '__main__':
+    emi = Emissions()
+    #print(emi.get_emissions(41.353755, 2.111845, 41.388346, 2.168766))
+    layers = emi.get_emissions(float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]))
+    os.mkdir('static/csvs/')
+    for layer, data in layers.items():
+        df = pd.DataFrame(data)
+        df.to_csv('static/csvs/' + layer + '.csv')
