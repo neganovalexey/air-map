@@ -25,6 +25,8 @@ class Emissions:
             emis.prepare_grid(min_lat, min_lon, lat_bins, lon_bins, bin_size)
         
         for i in range(lat_bins):
+            if i % 5 == 0:
+                print('completed ' + str(i) + '/' + str(lat_bins))
             for j in range(lon_bins):
                 lat = min_lat + bin_size * (i + 0.5)
                 lon = min_lon + bin_size * (j + 0.5)
@@ -147,5 +149,5 @@ if __name__ == '__main__':
         os.mkdir('static/csvs/')
     for layer, data in layers.items():
         df = pd.DataFrame(data)
-       	df.to_csv('static/csv/' + layer + '.csv')
+       	df.to_csv('static/csvs/' + layer + '.csv')
 

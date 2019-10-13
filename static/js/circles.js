@@ -60,10 +60,10 @@ $('#submitform').submit(function(e){
                       "type": "Feature",
                       "geometry": {
                           "type": "Point",
-                          "coordinates": [Number(row[2]), Number(row[1])]
+                          "coordinates": [Number(row[3]), Number(row[2])]
                       },
                       "properties": {
-                          "co2_emission": Number(row[3])
+                          "co2_emission": Number(row[1])
                       }
                   };
                   features.push(feature);
