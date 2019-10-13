@@ -15,8 +15,6 @@ var map = new H.Map(
   defaultLayers.normal.map,
   mapOptions);
 
-var circles = []
-
 var mapTileService = platform.getMapTileService({
     type: 'base'
   }),
@@ -32,29 +30,13 @@ map.setBaseLayer(mapLayer);
 var behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
 var ui = H.ui.UI.createDefault(map, defaultLayers, 'en-US');
 
-function prettyScaling(size, zoom) {
-  threshold = 32
-  base = 2 ** 10.5
-  if (size < threshold) {
-    radius = (size) / zoom;
-  } else {
-    radius = (threshold + Math.pow(size - threshold + 1, 0.25)) / zoom;
-  }
-  return base + radius * (2 ** 20 / threshold);
-}
+let nonLinearity = 1;
 
-setInterval(function() {
-  for (var i = 0; i < circles.length; ++i) {
-    var lat = circles[i].geom.getCenter().lat;
-    circles[i].geom.setRadius(prettyScaling(circles[i].size, 2 << map.getZoom())*Math.cos((180 / Math.PI)*lat));
-  }
-}, 500);
-
+var heatmap = null;
 
 window.addEventListener('resize', function () {
   map.getViewPort().resize();
 });
-    
 
 $('#submitform').submit(function(e){
   e.preventDefault();
@@ -63,54 +45,94 @@ $('#submitform').submit(function(e){
     type: 'post',
     data: $('#submitform').serialize(),
     success: function(data) {
-      for (var i = 0; i < circles.length; ++i) {
-        map.removeObject(circles[i].geom);
+      csvFile = data.filename;
+      let baseCount = data.base_count;
+      const colorScale = d3.scaleLinear().range(data.colorscale.range).domain(data.colorscale.domain);
+
+      let provider = new H.datalens.RawDataProvider({
+          dataUrl: csvBase + csvFile,
+          dataToFeatures: (data, helpers) => {
+              let parsed = helpers.parseCSV(data);
+              let features = [];
+              for (let i = 1; i < parsed.length; i++) {
+                  let row = parsed[i];
+                  let feature = {
+                      "type": "Feature",
+                      "geometry": {
+                          "type": "Point",
+                          "coordinates": [Number(row[2]), Number(row[1])]
+                      },
+                      "properties": {
+                          "co2_emission": Number(row[3])
+                      }
+                  };
+                  features.push(feature);
+              }
+              return features;
+          },
+          featuresToRows: (features, x, y, z, tileSize, helpers) => {
+              let counts = {};
+              for (let i = 0; i < features.length; i++) {
+                  let feature = features[i];
+                  let coordinates = feature.geometry.coordinates;
+                  let lng = coordinates[0];
+                  let lat = coordinates[1];
+
+                  let p = helpers.latLngToPixel(lat, lng, z, tileSize);
+                  let px = p[0];
+                  let py = p[1];
+                  let tx = px % tileSize;
+                  let ty = py % tileSize;
+                  let key = tx + '-' + ty;
+
+                  if (counts[key]) {
+                      counts[key] += feature.properties.co2_emission;
+                  } else {
+                      counts[key] = feature.properties.co2_emission;
+                  }
+              }
+
+              let rows = [];
+              for (let key in counts) {
+                  let t = key.split('-');
+                  let tx = Number(t[0]);
+                  let ty = Number(t[1]);
+                  let count = counts[key];
+                  if (count != 0) {
+                      rows.push({tx, ty, count, value: count});
+                  }
+              }
+              return rows;
+          }
+      });
+
+      if (heatmap !== null) {
+          map.removeLayer(heatmap);
       }
-
-      var points = data['points'];
-      circles = [];
-
-      for (var i = 0; i < points.length; ++i) {
-        var circle = new H.map.Circle(
-          { lat: points[i].lat, lng: points[i].lng },
-          prettyScaling(points[i].count, 2 << map.getZoom())*Math.cos((180 / Math.PI)*points[i].lat),
-          {style: {fillColor: points[i].fill_color, strokeColor: 'black', lineWidth: 0}})
-
-        circle.setData(points[i].lat.toString() + ' ' + points[i].lng.toString());
-
-        circle.addEventListener('tap', function (evt) {
-          var bubble =  new H.ui.InfoBubble(evt.target.getCenter(), {
-            content: evt.target.getData()
-          });
-          ui.addBubble(bubble);
-        }, false);
-
-        circles.push({size: points[i].count, geom: circle});
-
-        map.addObject(circle);
-      }
-
-      for (var i = 0; i < points.length; ++i) {
-        var circle = new H.map.Circle(
-          { lat: points[i].lat, lng: points[i].lng },
-          prettyScaling(points[i].count, 2 << map.getZoom())*Math.cos((180 / Math.PI)*points[i].lat),
-          {style: {fillColor: 'rgba(0, 0, 0, 0)', strokeColor: 'black', lineWidth: 2.0}})
-        
-        circles.push({size: points[i].count, geom: circle});
-
-        map.addObject(circle);
-      }
-
-      for (var i = 0; i < points.length; ++i) {
-        var circle = new H.map.Circle(
-          { lat: points[i].lat, lng: points[i].lng },
-          prettyScaling(points[i].count, 2 << map.getZoom())*Math.cos((180 / Math.PI)*points[i].lat),
-          {style: {fillColor: 'rgba(0, 0, 0, 0)', strokeColor: points[i].fill_color, lineWidth: 1.0}})
-
-        circles.push({size: points[i].count, geom: circle});
-
-        map.addObject(circle);
-      }
+      heatmap = new H.datalens.HeatmapLayer(provider, {
+          rowToTilePoint: row => {
+              return {
+                  x: row.tx,
+                  y: row.ty,
+                  count: Math.abs(row.count),
+                  value: Math.abs(row.count)
+              };
+          },
+          bandwidth: [{
+              value: 1,
+              zoom: 9
+          }, {
+              value: 12,
+              zoom: 16
+          }],
+          valueRange: z => [0, baseCount / Math.pow(z, 2 * nonLinearity)],
+          countRange: [0, 0],
+          opacity: 1,
+          colorScale: colorScale,
+          aggregation: H.datalens.HeatmapLayer.Aggregation.AVERAGE,
+          inputScale: H.datalens.HeatmapLayer.InputScale.LINEAR
+      });
+      map.addLayer(heatmap);
     }
   });
 });

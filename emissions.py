@@ -11,7 +11,7 @@ from utils import download_csv_dataset, download_veg_shapes, get_neighborhoods, 
 class Emissions:
 
     def __init__(self):
-        self._bins = 3
+        self._bins = 100
         self._layers_emis = {'trees': TreesEmissions(), 'vehicles': VehiclesEmissions(), 'veg': VegEmissions()}
     
     def get_emissions(self, min_lat, min_lon, max_lat, max_lon):
@@ -141,10 +141,11 @@ class VehiclesEmissions(EmissionsBase):
 
 if __name__ == '__main__':
     emi = Emissions()
-    #print(emi.get_emissions(41.353755, 2.111845, 41.388346, 2.168766))
+    # print(emi.get_emissions(41.353755, 2.111845, 41.388346, 2.168766))
     layers = emi.get_emissions(float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]))
     if not os.path.exists('static/csvs/'):
         os.mkdir('static/csvs/')
     for layer, data in layers.items():
         df = pd.DataFrame(data)
-        df.to_csv('static/csvs/' + layer + '.csv')
+       	df.to_csv('static/csv/' + layer + '.csv')
+

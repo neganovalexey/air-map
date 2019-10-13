@@ -2,11 +2,24 @@ from flask import Flask, render_template, request, jsonify
 
 import json
 
-from emissions import Emissions
-
 
 app = Flask(__name__, static_folder='static')
-emissions = Emissions()
+
+
+GREEN = ['rgba(255, 255, 255, 0)', 'yellow', 'rgba(34, 139, 34, 0.9)']
+RED = ['rgba(255, 255, 255, 0)', 'yellow', 'rgba(139, 34, 34, 0.9)']
+RED_YELLOW_GREEN = ['red', 'yellow', 'green']
+
+COLOR_SCHEMES = {
+    'empty.csv': (GREEN, 0),
+    'trees.csv': (GREEN, 100000),
+    'veg.csv': (GREEN, 100000000),
+    'vehicles.csv': (RED, 2000000000),
+    'trees_veg.csv': (GREEN, 100000000),
+    'trees_vehicles.csv': (RED_YELLOW_GREEN, 2000000000),
+    'veg_vehicles.csv': (RED_YELLOW_GREEN, 2000000000),
+    'trees_veg_vehicles.csv': (RED_YELLOW_GREEN, 2000000000)
+}
 
 
 @app.route('/', methods=['GET'])
@@ -15,14 +28,25 @@ def draw_map():
                            app_id=app.app_id,
                            app_code=app.app_code)
 
-@app.route('/filter',  methods=['POST'])
+
+@app.route('/filter', methods=['POST'])
 def make_info():
     data = request.form
-    print(data)
-    #TODO: return data depending on filter categories
-
-    response = emissions.get_emissions(data['min_lat'], data['min_lon'], data['max_lat'], data['max_lon'])
-    return jsonify(response)
+    keys = set(data)
+    print(keys)
+    if not keys:
+        filename = 'empty.csv'
+    else:
+        filename = '_'.join(sorted(keys)) + '.csv'
+    color_range, base_count = COLOR_SCHEMES[filename]
+    return jsonify({
+        'filename': filename,
+        'colorscale': {
+            'range': color_range,
+            'domain': [0, 0.5, 1],
+        },
+        'base_count': base_count,
+    })
 
 
 try:
