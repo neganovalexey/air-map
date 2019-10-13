@@ -15,8 +15,6 @@ var map = new H.Map(
   defaultLayers.normal.map,
   mapOptions);
 
-var circles = []
-
 var mapTileService = platform.getMapTileService({
     type: 'base'
   }),
@@ -32,28 +30,25 @@ map.setBaseLayer(mapLayer);
 var behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
 var ui = H.ui.UI.createDefault(map, defaultLayers, 'en-US');
 
-let baseCount = 10000;
-let nonLinearity = 2;
+let nonLinearity = 1;
+
+var heatmap = null;
 
 window.addEventListener('resize', function () {
   map.getViewPort().resize();
 });
-
-const colorScale = d3.scaleLinear().range([
-          'rgba(255, 255, 255, 0)',
-	  'yellow',
-          'rgba(34, 139, 34, 0.9)',
-      ]).domain([0, 0.5, 1]);
 
 $('#submitform').submit(function(e){
   e.preventDefault();
   $.ajax({
     url: '/filter',
     type: 'post',
-    response: $('#submitform').serialize(),
-    success: function(response) {
-      csvFile = response.filename;
-      // maybe need to remove layer here
+    data: $('#submitform').serialize(),
+    success: function(data) {
+      csvFile = data.filename;
+      let baseCount = data.base_count;
+      const colorScale = d3.scaleLinear().range(data.colorscale.range).domain(data.colorscale.domain);
+
       let provider = new H.datalens.RawDataProvider({
           dataUrl: csvBase + csvFile,
           dataToFeatures: (data, helpers) => {
@@ -110,7 +105,11 @@ $('#submitform').submit(function(e){
               return rows;
           }
       });
-      let heatmap = new H.datalens.HeatmapLayer(provider, {
+
+      if (heatmap !== null) {
+          map.removeLayer(heatmap);
+      }
+      heatmap = new H.datalens.HeatmapLayer(provider, {
           rowToTilePoint: row => {
               return {
                   x: row.tx,
@@ -123,14 +122,14 @@ $('#submitform').submit(function(e){
               value: 1,
               zoom: 9
           }, {
-              value: 10,
+              value: 12,
               zoom: 16
           }],
           valueRange: z => [0, baseCount / Math.pow(z, 2 * nonLinearity)],
           countRange: [0, 0],
           opacity: 1,
           colorScale: colorScale,
-          aggregation: H.datalens.HeatmapLayer.Aggregation.SUM,
+          aggregation: H.datalens.HeatmapLayer.Aggregation.AVERAGE,
           inputScale: H.datalens.HeatmapLayer.InputScale.LINEAR
       });
       map.addLayer(heatmap);

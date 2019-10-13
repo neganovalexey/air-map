@@ -13,7 +13,7 @@
         <script type="text/javascript" charset="UTF-8" src="https://js.api.here.com/v3/3.0/mapsjs-mapevents.js"></script>
         <script type="text/javascript" charset="UTF-8" src="https://js.cit.datalens.api.here.com/latest/mapsjs-datalens.js"></script>
 	<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery/1/jquery.min.js"></script>
+	<script type="text/javascript" src="//cdn.jsdelivr.net/jquery/1/jquery.min.js"></script>
 
         <link rel="stylesheet" href={{ url_for("static", filename="css/app.css") }}>
         <link rel="stylesheet" href={{ url_for("static", filename="css/bootstrap.min.css") }}>
@@ -42,10 +42,12 @@
                 <div class="col-sm-12 col-md-2 col-lg-2 align-left" style="margin-top: 5vh; text-align:left; display:flex; flex-direction:column">
                   <form action="/filter" method="post" target="dummyframe" id="submitform">
                     <fieldset class="form-group">
-                      <div class="custom-control custom-checkbox"><label><input type="checkbox" class="custom-control-input" id="select_all" checked><u>Select all</u></label></div>
-                      <div class="custom-control custom-checkbox"><label><input type="checkbox" class="custom-control-input layer" id="id1" name="id1" checked>Sample layer checkbox (dead for now)</label></div>
+                      <div class="custom-control custom-checkbox"><label><input type="checkbox" class="custom-control-input" id="select_all" checked><b>Select all</b></label></div>
+                      <div class="custom-control custom-checkbox"><label><input type="checkbox" class="custom-control-input layer" id="trees" name="trees" checked> Trees</label></div>
+                      <div class="custom-control custom-checkbox"><label><input type="checkbox" class="custom-control-input layer" id="vehicles" name="vehicles" checked> Vehicles</label></div>
+                      <div class="custom-control custom-checkbox"><label><input type="checkbox" class="custom-control-input layer" id="veg" name="veg" checked> Plants</label></div>
                     </fieldset>
-                    <br>
+                    <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe"></iframe>
                     <input type="submit" class="btn btn-info" id="submit_layers" value="Filter">
                   </form>
                 </div>
